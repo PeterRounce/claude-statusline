@@ -22,8 +22,17 @@ command -v jq >/dev/null 2>&1 || {
 mkdir -p "$CLAUDE_DIR"
 
 # --- the script ------------------------------------------------------------
-src="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" 2>/dev/null && pwd)/statusline.sh"
-if [ -f "$src" ]; then
+# Only trust a sibling statusline.sh when this script is genuinely running from
+# a file - piping into bash leaves BASH_SOURCE empty, and $PWD could hold
+# anything.
+src=""
+self="${BASH_SOURCE[0]:-}"
+if [ -n "$self" ] && [ -f "$self" ]; then
+  candidate="$(cd "$(dirname "$self")" && pwd)/statusline.sh"
+  [ -f "$candidate" ] && src="$candidate"
+fi
+
+if [ -n "$src" ]; then
   fetched=""
 else
   fetched="$(mktemp)"; trap 'rm -f "$fetched"' EXIT
